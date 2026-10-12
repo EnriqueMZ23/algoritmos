@@ -75,7 +75,7 @@ class SolutionTest {
 - `assertThat(...)` (AssertJ) compara el resultado con el esperado y, si falla, muestra un mensaje claro con la diferencia.
 - Añadir un caso nuevo es tan fácil como añadir una línea más a `casos()`.
 
-## Maven Wrapper vs. Maven instalado en local
+## Maven Wrapper
 
 Para compilar y ejecutar los tests hace falta Maven. Hay dos formas de tenerlo:
 
