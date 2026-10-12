@@ -88,7 +88,7 @@ Para compilar y ejecutar los tests hace falta Maven. Hay dos formas de tenerlo:
 
 Yo no tengo Maven instalado en el sistema, así que uso el **wrapper**.
 
-### Cómo lo he generado
+### Generación del script y control de versión
 
 He usado el Maven que trae integrado **IntelliJ IDEA**. Con él he ejecutado el goal `wrapper:wrapper`, pasándole un parámetro para que el wrapper use la versión de Maven más moderna:
 
