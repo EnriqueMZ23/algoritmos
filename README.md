@@ -25,7 +25,7 @@ algoritmos/
 ├── .mvn/
 │   ├── wrapper/maven-wrapper.properties   <- versión de Maven que usa el wrapper
 │   └── jvm.config                 <- opciones de la JVM para Maven
-├── nuevo-problema.ps1             <- script para crear un problema nuevo
+├── nuevo-problema.ps1             <- plantilla para crear un problema nuevo
 └── src/
     ├── main/java/neetcode/
     │   └── <categoria>/
@@ -75,19 +75,51 @@ class SolutionTest {
 - `assertThat(...)` (AssertJ) compara el resultado con el esperado y, si falla, muestra un mensaje claro con la diferencia.
 - Añadir un caso nuevo es tan fácil como añadir una línea más a `casos()`.
 
-## Aprendiendo Maven
+## Maven Wrapper vs. Maven instalado en local
 
-Este proyecto también me ha servido para **aprender Maven**:
+Para compilar y ejecutar los tests hace falta Maven. Hay dos formas de tenerlo:
 
-- **`pom.xml`**: aquí se define la versión de Java, las dependencias de test (JUnit y AssertJ) y los plugins que compilan el código (`maven-compiler-plugin`) y ejecutan los tests (`maven-surefire-plugin`).
-- **Ciclo de vida**: al ejecutar `test`, Maven compila `src/main/java`, después compila `src/test/java` y por último Surefire lanza JUnit. Todo lo generado acaba en la carpeta `target/`, que no se sube al repositorio.
-- **Maven Wrapper**: no tengo Maven instalado en el sistema. Uso un **wrapper** (`mvnw` / `mvnw.cmd`) que he generado con el Maven que trae integrado **IntelliJ IDEA**, ejecutando el goal `wrapper:wrapper` con un parámetro para fijar la versión de Maven más moderna:
+| | Maven instalado en local | Maven Wrapper (lo que usa este proyecto) |
+|---|---|---|
+| **Comando** | `mvn test` | `.\mvnw test` (Windows) / `./mvnw test` (Linux-Mac) |
+| **Instalación** | Hay que descargarlo, instalarlo y añadirlo al `PATH` | Nada: viene dentro del repositorio |
+| **Versión de Maven** | La que tenga instalada cada persona | La fijada en el proyecto, igual para todos |
+| **Dónde vive** | Donde se instaló (p. ej. `C:\Program Files\Maven`) | En la carpeta de usuario, gestionada por el wrapper |
 
-  ```bash
-  mvn wrapper:wrapper -Dmaven=3.9.11
+Yo no tengo Maven instalado en el sistema, así que uso el **wrapper**.
+
+### Cómo lo he generado
+
+He usado el Maven que trae integrado **IntelliJ IDEA**. Con él he ejecutado el goal `wrapper:wrapper`, pasándole un parámetro para que el wrapper use la versión de Maven más moderna:
+
+```bash
+mvn wrapper:wrapper -Dmaven=3.9.11
+```
+
+Esto genera tres ficheros que se suben al repositorio:
+
+- `mvnw`: script para Linux, Mac o Git Bash.
+- `mvnw.cmd`: script para Windows.
+- `.mvn/wrapper/maven-wrapper.properties`: indica qué versión de Maven hay que usar y de dónde descargarla.
+
+  ```properties
+  distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.11/apache-maven-3.9.11-bin.zip
   ```
 
-  Esto crea los scripts `mvnw`/`mvnw.cmd` y el fichero `.mvn/wrapper/maven-wrapper.properties`, donde queda guardada la versión. La primera vez que se ejecuta, el wrapper descarga esa versión de Maven automáticamente, así que cualquiera puede clonar el repositorio y lanzar los tests **sin instalar Maven** y siempre con la misma versión.
+### Qué hace el script al ejecutarlo
+
+1. Lee `maven-wrapper.properties` para saber qué versión de Maven necesita.
+2. Comprueba si esa versión ya está descargada en la **carpeta del usuario**: `~/.m2/wrapper/dists/apache-maven-3.9.11/...`. En Windows es `C:\Users\<usuario>\.m2\wrapper\dists\...`.
+3. Si no lo está, **la descarga y la descomprime ahí**. Solo ocurre la primera vez.
+4. Lanza esa copia de Maven con los argumentos que le hayas pasado (`test`, `clean`...).
+
+Así, cualquiera puede clonar el repositorio y ejecutar los tests **sin instalar Maven**, y siempre con la misma versión. Para cambiar de versión basta con editar `distributionUrl` en el `.properties`: la próxima ejecución descargará la nueva.
+
+### Lo que hace Maven en este proyecto
+
+- **`pom.xml`**: define la versión de Java, las dependencias de test (JUnit y AssertJ) y los plugins que compilan el código (`maven-compiler-plugin`) y ejecutan los tests (`maven-surefire-plugin`).
+- **Al ejecutar `test`**: Maven compila `src/main/java`, después compila `src/test/java` y por último Surefire lanza JUnit. Todo lo generado acaba en `target/`, que no se sube al repositorio.
+- **Dependencias**: JUnit y AssertJ se descargan también en la carpeta del usuario, en `~/.m2/repository`, y se reutilizan entre proyectos.
 
 ## Comandos para lanzar los tests
 
@@ -112,13 +144,39 @@ El resultado aparece al final de la salida:
 [INFO] BUILD SUCCESS
 ```
 
-## Añadir un problema nuevo
+## Añadir un problema nuevo: la plantilla `nuevo-problema.ps1`
 
-El script `nuevo-problema.ps1` crea las tres plantillas (solución, README y test) en su sitio:
+Para no crear cada vez las carpetas y archivos a mano, el proyecto incluye `nuevo-problema.ps1`, un script de PowerShell que funciona como **plantilla de problema nuevo**. Se le pasa el título y la categoría:
 
 ```powershell
 .\nuevo-problema.ps1 "Valid Parentheses" stack -Dificultad Easy
 ```
+
+Y genera la estructura completa, ya en su sitio y con el paquete correcto:
+
+```
+src/main/java/neetcode/stack/valid_parentheses/
+    Solution.java       <- clase Solution vacía, con el enlace al problema
+    README.md           <- plantilla con: Enunciado, Ejemplos, Enfoque y Complejidad
+src/test/java/neetcode/stack/valid_parentheses/
+    SolutionTest.java   <- test parametrizado listo para añadir los casos
+```
+
+Después solo queda:
+
+1. Pegar la solución en `Solution.java`.
+2. Rellenar el `README.md` con la explicación del algoritmo y su complejidad.
+3. Añadir los casos de prueba en `casos()` y la llamada al método en el test.
+4. Ejecutar `.\mvnw test`.
+
+| Parámetro     | Obligatorio | Descripción                                                                                |
+|---------------|-------------|--------------------------------------------------------------------------------------------|
+| Título        | Sí          | Nombre del problema. De él salen el nombre de la carpeta y del paquete.                    |
+| Categoría     | Sí          | Una de las categorías de NeetCode (`arrays_hashing`, `stack`, `trees`...). Se autocompleta con Tab. |
+| `-Dificultad` | No          | `Easy` (por defecto), `Medium` o `Hard`.                                                  |
+| `-Url`        | No          | Enlace al problema. Si no se indica, se deduce del título.                                |
+
+Si el problema ya existe, el script no sobrescribe nada y avisa.
 
 Si la URL de NeetCode no coincide con el título, se puede indicar con `-Url`:
 
